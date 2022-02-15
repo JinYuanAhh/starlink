@@ -1,0 +1,4 @@
+package starIM
+
+func init() {
+}
