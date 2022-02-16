@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 )
 
-
 //func init() {
 //
 //	fmt.Println(StartFileSave("test.txt", "3", "202cb962ac59075b964b07152d234b70"))
@@ -32,12 +31,11 @@ func StartFileSave(fn string, CompSegIndex string, MD5 string) error {
 		return err
 	} else {
 		defer f.Close()
-		fi_New := "{}"
-		l, _ := sjson.Set(fi_New, "MD5", MD5)
-		l, _ = sjson.Set(l, "CompSegIndex", CompSegIndex)
-		l, _ = sjson.Set(l, "SegIndex", 0)
-		fi_New = l
-		_, err := f.Write([]byte(fi_New))
+		_, err := f.Write([]byte(GenerateJson(map[string]string{
+			"MD5":          MD5,
+			"CompSegIndex": CompSegIndex,
+			"SegIndex":     "0",
+		})))
 		if err != nil {
 			return err
 		}

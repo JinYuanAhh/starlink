@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/gorilla/websocket"
@@ -21,6 +22,8 @@ var (
 			return true
 		},
 	}
+	pingTickTime = time.Minute
+	pingChan     = make(chan map[string]IM.User)
 )
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
@@ -41,8 +44,8 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 			conn.Close()
 			return
 		}
-		//IM.Normal("[Msg] Received:%s\n[Msg] Type:%d", msg, msgType)
-		if msgType == 1 {
+		IM.Normal("[Msg] Received:%s\n[Msg] Type:%d", msg, msgType)
+		if msgType == websocket.TextMessage {
 			vd := gjson.ValidBytes(msg)
 			if vd {
 				go dealTextMsg(conn, msg)
@@ -50,8 +53,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 			} else {
 				//IM.Warn("[Msg] invalid json")
 			}
-		}
-		if msgType == 2 && bytes.Contains(msg, []byte{'|'}) {
+		} else if msgType == websocket.BinaryMessage && bytes.Contains(msg, []byte{'|'}) {
 			b_args := bytes.SplitN(msg, []byte{'|'}, 2)
 			//Msg 分割后成为 args
 			arg, err := IM.Base64_Decode(string(b_args[0]))
@@ -69,6 +71,9 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			dealBinMsg(conn, arg, content)
+		} else if msgType == websocket.PongMessage {
+			aci, _ := IM.ParseToken(string(msg))
+			pingChan <- map[string]IM.User{aci.Ac: IM.User{conn, aci.P, false}}
 		}
 	}
 }
@@ -77,8 +82,9 @@ func main() {
 	fmt.Println(color.HiYellowString("-- Star Link Server --"))
 	var err error
 	http.HandleFunc("/", wsHandler) //HTTP服务挂载
-	err = IM.Conn()                 //连接数据库
-	if err != nil {                 //错误
+	//go IM.TickForPing(pingTickTime, pingChan)
+	err = IM.Conn() //连接数据库
+	if err != nil { //错误
 		IM.Err("[DB]:", err)
 	} else {
 		IM.Succ("[DB] Connected.")

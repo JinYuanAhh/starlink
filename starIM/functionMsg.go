@@ -4,12 +4,14 @@ func Msg_Signin_Success(T string) []byte {
 	return []byte(GenerateJson(map[string]string{
 		"Type":   "Signin",
 		"Status": "Success",
+		"T":      T,
 	}))
 }
-func Msg_Signin_Logged() []byte {
+func Msg_Signin_Err(err error) []byte {
 	return []byte(GenerateJson(map[string]string{
 		"Type":   "Signin",
-		"Status": "Logged",
+		"Status": "Error",
+		"Err":    err.Error(),
 	}))
 }
 func Msg_File_New_Success() []byte {

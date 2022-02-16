@@ -4,12 +4,13 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/gorilla/websocket"
 	IM "github.com/starIM"
 	"github.com/tidwall/gjson"
 )
 
-func dealTextMsg(conn *websocket.Conn, msg []byte) { //处理消息
+func dealTextMsg(Conn *websocket.Conn, msg []byte) { //处理消息
 	var err error
 	sJson := string(msg) //[]byte 转 字符串
 	//Account := gjson.Get(sJson, "Userinfo.Account").String() //获取用户账号
@@ -61,22 +62,28 @@ func dealTextMsg(conn *websocket.Conn, msg []byte) { //处理消息
 		l_Pwd := gjson.Get(sJson, "Info.Pwd").String()
 		l_Platform := gjson.Get(sJson, "Info.P").String()
 		if e, _ := IM.CheckUserPlatformExist(l_Account, l_Platform); e {
-			conn.WriteMessage(1, IM.Msg_Signin_Logged())
-		}
-		_, err := IM.Signin(l_Account, l_Pwd) //登陆
-		if err == nil {                       //成功
-			T, err := IM.GenerateToken(l_Account, l_Platform)
-			if err != nil {
-				IM.Warn("[Signin] %s", err)
-			} else {
-				conn.WriteMessage(1, IM.Msg_Signin_Success(T))
-				IM.JoinUserPlatform(l_Account, conn, l_Platform)
+			Conn.WriteMessage(1, IM.Msg_Signin_Err(errors.New("Logged")))
+		} else {
+			_, err := IM.Signin(l_Account, l_Pwd) //登陆
+			if err == nil {                       //成功
+				T, err := IM.GenerateToken(l_Account, l_Platform)
+				if err != nil {
+					IM.Warn("[Signin] %s", err)
+				} else {
+					Conn.WriteMessage(1, IM.Msg_Signin_Success(T))
+					IM.JoinUserPlatform(l_Account, Conn, l_Platform)
+				}
+			} else { // 失败
+				IM.Normal("[Signin] %s", err)
+				Conn.WriteMessage(1, IM.Msg_Signin_Err(err))
 			}
-		} else { // 失败
-			IM.Normal("[Signin] %s", err)
 		}
 	case "Logout":
-		l_ACI, _ := IM.ParseToken(gjson.Get(sJson, "T").String())
+		l_ACI, err := IM.ParseToken(gjson.Get(sJson, "T").String())
+		if err != nil {
+			IM.Warn("%s", err)
+			return
+		}
 		l_ac := l_ACI.Ac
 		l_p := l_ACI.P
 		if l_ac == "" || l_p == "" {
@@ -86,7 +93,7 @@ func dealTextMsg(conn *websocket.Conn, msg []byte) { //处理消息
 	}
 }
 
-func dealBinMsg(conn *websocket.Conn, arg []byte, content []byte) {
+func dealBinMsg(Conn *websocket.Conn, arg []byte, content []byte) {
 	Type := gjson.GetBytes(arg, "Type").String()
 	switch Type {
 	case "File":
@@ -95,21 +102,21 @@ func dealBinMsg(conn *websocket.Conn, arg []byte, content []byte) {
 		case "New":
 			err := IM.StartFileSave(gjson.GetBytes(arg, "FN").String(), gjson.GetBytes(arg, "CompSegIndex").String(), gjson.GetBytes(arg, "MD5").String())
 			if err != nil {
-				conn.WriteMessage(1, IM.Msg_File_New_Err(err))
-			}else {
-				conn.WriteMessage(1, IM.Msg_File_New_Success())
+				Conn.WriteMessage(1, IM.Msg_File_New_Err(err))
+			} else {
+				Conn.WriteMessage(1, IM.Msg_File_New_Success())
 			}
 		case "Continue":
 			l_bool, err := IM.ContinueFileSave(gjson.GetBytes(arg, "FN").String(), content)
 			if err != nil && !l_bool {
-				conn.WriteMessage(1, IM.Msg_File_Continue_Err(err))
+				Conn.WriteMessage(1, IM.Msg_File_Continue_Err(err))
 				IM.Warn("[File Continue] %s", err)
 				return
-			}else if err != nil && l_bool {
-				conn.WriteMessage(1, IM.Msg_File_Continue_Err(err))
+			} else if err != nil && l_bool {
+				Conn.WriteMessage(1, IM.Msg_File_Continue_Err(err))
 				return
-			}else if err == nil && l_bool {
-				conn.WriteMessage(1, IM.Msg_File_Continue_Success())
+			} else if err == nil && l_bool {
+				Conn.WriteMessage(1, IM.Msg_File_Continue_Success())
 				return
 			}
 		}
