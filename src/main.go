@@ -32,13 +32,14 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		IM.Err("[ERR] Upgrader:", err)
 		return
 	}
+
+	var SigninWrongCount int                       //SigninWrong Counter
 	connectMsg := []byte(`{"Type": "ConnectMsg"}`) //连接成功时发送消息
 	conn.WriteMessage(1, connectMsg)               //发送
 	//IM.Normal("[Conn] A New Connection")
 	defer conn.Close()
 	for {
 		msgType, msg, err := conn.ReadMessage()
-
 		if err != nil {
 			//IM.Err("[ReadMsg] %s", err)
 			conn.Close()
@@ -48,7 +49,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		if msgType == websocket.TextMessage {
 			vd := gjson.ValidBytes(msg)
 			if vd {
-				go dealTextMsg(conn, msg)
+				go dealTextMsg(conn, msg, &SigninWrongCount)
 
 			} else {
 				//IM.Warn("[Msg] invalid json")

@@ -10,14 +10,16 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-func dealTextMsg(Conn *websocket.Conn, msg []byte) { //处理消息
-	var err error
+func dealTextMsg(Conn *websocket.Conn, msg []byte, counter *int) { //处理消息
 	sJson := string(msg) //[]byte 转 字符串
 	//Account := gjson.Get(sJson, "Userinfo.Account").String() //获取用户账号
 	l_msgType := gjson.Get(sJson, "Type").String() //获取信息类型
 	switch l_msgType {
 	case "SendMsg":
-		l_ACI, _ := IM.ParseToken(gjson.Get(sJson, "T").String())
+		l_ACI, err := IM.ParseToken(gjson.Get(sJson, "T").String())
+		if err != nil {
+			return
+		}
 		l_ac := l_ACI.Ac
 		l_p := l_ACI.P
 		if err != nil {
@@ -25,21 +27,26 @@ func dealTextMsg(Conn *websocket.Conn, msg []byte) { //处理消息
 		}
 		ValidUserLogged := l_ac != "" && l_p != ""
 		if ValidUserLogged {
-			l_msgContent := gjson.Get(sJson, "Msginfo.Content").String()  //获取信息内容
-			l_msgContentType := gjson.Get(sJson, "Msginfo.Type").String() //获取内容类型
-			switch l_msgContentType {                                     //依据消息的公私分情况
+			l_msgContent := gjson.Get(sJson, "Info.Content").String() //获取信息内容
+			msgToSend := IM.GenerateJson(map[string]string{
+				"Type":         "Message",
+				"Info.Type":    "Text",
+				"Info.Content": l_msgContent,
+			})
+			l_msgContentType := gjson.Get(sJson, "Info.Type").String() //获取内容类型
+			switch l_msgContentType {                                  //依据消息的公私分情况
 			case "Public": //公共消息（所有人）
-				IM.SendStr_Public([]byte(l_msgContent))
+				IM.SendStr_Public([]byte(msgToSend))
 			case "Private": //私聊
-				account := gjson.Get(sJson, "Msginfo.To").String()
-				IM.SendStr_Private([]byte(l_msgContent), account)
+				account := gjson.Get(sJson, "Info.To").String()
+				IM.SendStr_Private([]byte(msgToSend), account)
 			case "Group": //群发
 				var accounts []string
-				err = json.Unmarshal([]byte(gjson.Get(sJson, "Msginfo.To").String()), &accounts) //获取发送给的账号
+				err = json.Unmarshal([]byte(gjson.Get(sJson, "Info.To").String()), &accounts) //获取发送给的账号
 				if err != nil {
 					//IM.Normal("[Get] get ids when GroupMsg failed") //发送失败
 				} else {
-					//IM.SendStr_Group([]byte(l_msgContent), accounts) //发送
+					//IM.SendStr_Group([]byte(msgToSend), accounts) //发送
 				}
 			default:
 				IM.Normal("UnFinished Func")
@@ -76,6 +83,12 @@ func dealTextMsg(Conn *websocket.Conn, msg []byte) { //处理消息
 			} else { // 失败
 				IM.Normal("[Signin] %s", err)
 				Conn.WriteMessage(1, IM.Msg_Signin_Err(err))
+				if err.Error() == "password is wrong" {
+					*counter = *counter + 1
+					if *counter >= 4 {
+						Conn.Close()
+					}
+				}
 			}
 		}
 	case "Logout":

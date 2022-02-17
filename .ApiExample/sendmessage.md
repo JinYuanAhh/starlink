@@ -3,9 +3,9 @@
 ```json -- JSON
 {
     "Type": "SendMsg",
-    "Msginfo": {
+    "Info": {
         "Content": "<Message>",
-        "To": "<SendToID>",
+        "To": "<SendTo>",
         "Type": "Public/Private/Group"
     }
 }

@@ -63,3 +63,7 @@ func SuccF(msg string, f ...interface{}) {
 func NormalF(msg string, f ...interface{}) {
 	fmt.Printf(StrConnect(TacklePrefix(), color.WhiteString(msg)), f...)
 }
+
+func Debug(msg string, f ...interface{}) {
+	fmt.Printf(StrConnect(color.BlueString(msg)), f...)
+}

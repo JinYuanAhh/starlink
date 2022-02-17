@@ -32,7 +32,7 @@ func Signin(account string, pwd string) (string, error) { //登录
 	err := db.QueryRow(sqlStr, account).Scan(&secretKey, &password) //查询
 	if err != nil {                                                 //查询失败
 		if err == sql.ErrNoRows { //无此账号
-			return "", errors.New("user does't exists")
+			return "", errors.New("user doesn't exists")
 		} else { //其他
 			return "", err
 		}
