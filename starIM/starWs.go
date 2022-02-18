@@ -1,7 +1,6 @@
 package starIM
 
 import (
-	"fmt"
 	"github.com/gorilla/websocket"
 	"time"
 )
@@ -9,7 +8,6 @@ import (
 type User struct {
 	Conn     *websocket.Conn
 	Platform string
-	Pinged   bool
 }
 
 var Users = make(map[string][]*User)
@@ -22,7 +20,7 @@ func JoinUserPlatform(account string, conn *websocket.Conn, platform string) int
 	if e {
 		return i
 	} else {
-		Users[account] = append(Users[account], &User{conn, platform, false})
+		Users[account] = append(Users[account], &User{conn, platform})
 		return len(Users[account]) - 1
 	}
 }
@@ -62,39 +60,20 @@ func CheckUserExist(account string) bool {
 	return exist
 }
 
-func TickForPing(p time.Duration, c chan map[string]User) {
+func Ping(p time.Duration) {
 	ticker := time.NewTicker(p) //Ping/Pong定时器
 	defer ticker.Stop()
-	fmt.Println("d")
 	for range ticker.C {
-		tc := make(chan int) //time chan
 		Send_Public(websocket.PingMessage, []byte{})
-		fmt.Println("d")
-		go func() { time.Sleep(time.Second * 15); tc <- 0 }()
-		select {
-		case <-tc: //15秒的最大等待时间到了
-			//fmt.Println("tc")
-			close(c)
-			for k, v := range Users {
-				for _, u := range v {
-					if !u.Pinged {
-						DelUserPlatform(k, u.Platform)
-					} else {
-						u.Pinged = false
-					}
-				}
-			}
-			c = make(chan map[string]User)
-		case l_value := <-c: //有新用户回复了这个消息
-			//fmt.Println("c")
-			for k, v := range l_value {
-				for _, u := range Users[k] {
-					if u.Platform == v.Platform && u.Conn == v.Conn {
-						u.Pinged = true
-					}
-				}
+		for _, v := range Users {
+			for _, vv := range v {
+				vv.Conn.SetReadDeadline(time.Now().Add((time.Second * 10)))
+				vv.Conn.SetPongHandler(func(str string) error {
+					vv.Conn.SetReadDeadline(time.Now().Add((time.Second * 10)))
+					return nil
+				})
 			}
 		}
 	}
 
-}
+} //Ping(How long)

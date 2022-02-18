@@ -65,5 +65,5 @@ func NormalF(msg string, f ...interface{}) {
 }
 
 func Debug(msg string, f ...interface{}) {
-	fmt.Printf(StrConnect(color.BlueString(msg)), f...)
+	fmt.Printf(StrConnect(color.BlueString(msg), "\n"), f...)
 }
