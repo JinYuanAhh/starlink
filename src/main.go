@@ -3,10 +3,10 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/gorilla/mux"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/fatih/color"
@@ -24,6 +24,7 @@ var (
 		},
 	}
 	pingTickTime = time.Minute //每隔 pingTickTime 时间发送一次Ping消息
+	R            = mux.NewRouter()
 )
 
 func wsHandler(w http.ResponseWriter, r *http.Request) { //websocket 处理器函数
@@ -37,7 +38,6 @@ func wsHandler(w http.ResponseWriter, r *http.Request) { //websocket 处理器�
 	connectMsg := []byte(`{"Type": "ConnectMsg"}`) //连接成功时发送的消息
 	conn.WriteMessage(1, connectMsg)               //发送
 	//IM.Normal("[Conn] A New Connection")
-	IM.Debug("%s", strings.Split(r.RemoteAddr, ":")[0])
 	defer conn.Close()
 	for { //死循环读消息
 		msgType, msg, err := conn.ReadMessage() //没有新消息时会阻塞
@@ -78,7 +78,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) { //websocket 处理器�
 func main() {
 	fmt.Println(color.HiYellowString("-- Star Link Server --"))
 	var err error
-	http.HandleFunc("/", wsHandler) //HTTP服务挂载
+	//http.HandleFunc("/", wsHandler) //HTTP服务挂载
 	//FUNC:: IM.Ping(pingTickTime) //开启Ping/Pong功能
 	err = IM.Conn() //连接数据库
 	if err != nil { //错误
@@ -86,7 +86,8 @@ func main() {
 	} else {
 		IM.Succ("[DB] Connected.")
 	}
-	http.ListenAndServe(":8889", nil) //监听
+	InitMux()
+	http.ListenAndServe(":8889", R) //监听
 }
 
 func init() {
