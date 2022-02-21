@@ -2,9 +2,6 @@ package starIM
 
 import (
 	"database/sql"
-	"errors"
-	"fmt"
-	"github.com/gorilla/sessions"
 	"math/rand"
 	"time"
 	"unsafe"
@@ -51,19 +48,35 @@ func T_RandString(n int) string { //随机生成字符串 skey用
 
 	return *(*string)(unsafe.Pointer(&b))
 }
-func T_CheckSecertKeySha(Account string, key string) (bool, error) { //查询skey是否匹配
-	s, err := SelectUserSecertKeyByAccount(Account)
+
+func CheckTokenValid(token string) bool {
+	_, err := ParseToken(token)
 	if err != nil {
-		return false, err
+		return false
 	} else {
-		if Sha256(s) == key {
-			return true, nil
-		} else {
-			return false, errors.New("key is wrong")
-		}
+		return true
 	}
 }
-func T_GetSessionValue(s *sessions.Session, key string) string {
-	v_i, _ := s.Values[key]
-	return fmt.Sprintf("%s", v_i)
+func Query_userPublicInfo(account string) string {
+	var str string
+	sqlStr := "SELECT publicInfo FROM users WHERE account=?"
+	err := db.QueryRow(sqlStr, account).Scan(&str)
+	if err != nil {
+		return "{}"
+	}
+	return str
+}
+func Query_userPrivateInfo(token string) string {
+	var str string
+	l_ACI, err := ParseToken(token)
+	if err != nil {
+		return ""
+	} else {
+		sqlStr := "SELECT privateInfo FROM users WHERE account=?"
+		err = db.QueryRow(sqlStr, l_ACI.Ac).Scan(&str)
+		if err != nil {
+			return "{}"
+		}
+		return str
+	}
 }

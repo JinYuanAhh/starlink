@@ -4,7 +4,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/gorilla/websocket"
 	IM "github.com/starIM"
 	"github.com/tidwall/gjson"
@@ -57,19 +56,31 @@ func dealTextMsg(Conn *websocket.Conn, msg []byte, counter *int) { //处理消�
 	case "Signup": //注册
 		account := gjson.Get(sJson, "Info.Account").String()
 		pwd := gjson.Get(sJson, "Info.Pwd").String()
-		phoneNumber := gjson.Get(sJson, "Info.PhoneNumber").String()
-		_, err := IM.Signup(account, pwd, phoneNumber) //注册, 只需要捕获错误
+		_, err := IM.Signup(account, pwd) //注册, 只需要捕获错误
 		if err != nil {
 			//IM.Warn("[Signup] %s", err) //警告
+			Conn.WriteMessage(1, []byte(IM.GenerateJson(map[string]string{
+				"Type":   "Signup",
+				"Status": "Error",
+				"Err":    err.Error(),
+			})))
 		} else {
 			//IM.Normal("[Signup] New Acoount At: account: %s, pwd: %s, phoneNumber: %s", account, pwd, phoneNumber) //输出日志
+			Conn.WriteMessage(1, []byte(IM.GenerateJson(map[string]string{
+				"Type":   "Signup",
+				"Status": "Success",
+			})))
 		}
 	case "Signin": //登录
 		l_Account := gjson.Get(sJson, "Info.Account").String()
 		l_Pwd := gjson.Get(sJson, "Info.Pwd").String()
 		l_Platform := gjson.Get(sJson, "Info.P").String()
 		if e, _ := IM.CheckUserPlatformExist(l_Account, l_Platform); e {
-			Conn.WriteMessage(1, IM.Msg_Signin_Err(errors.New("Logged")))
+			Conn.WriteMessage(1, []byte(IM.GenerateJson(map[string]string{
+				"Type":   "Signin",
+				"Status": "Error",
+				"Err":    "account has been logged",
+			})))
 		} else {
 			_, err := IM.Signin(l_Account, l_Pwd) //登陆
 			if err == nil {                       //成功
@@ -77,17 +88,24 @@ func dealTextMsg(Conn *websocket.Conn, msg []byte, counter *int) { //处理消�
 				if err != nil {
 					IM.Warn("[Signin] %s", err)
 				} else {
-					Conn.WriteMessage(1, IM.Msg_Signin_Success(T))
+					Conn.WriteMessage(1, []byte(IM.GenerateJson(map[string]string{
+						"Type":   "Signin",
+						"Status": "Success",
+						"T":      T,
+					})))
 					IM.JoinUserPlatform(l_Account, Conn, l_Platform)
 				}
 			} else { // 失败
-				IM.Normal("[Signin] %s", err)
-				Conn.WriteMessage(1, IM.Msg_Signin_Err(err))
+				Conn.WriteMessage(1, []byte(IM.GenerateJson(map[string]string{
+					"Type":   "Signin",
+					"Status": "Error",
+					"Err":    err.Error(),
+				})))
 				if err.Error() == "password is wrong" {
-					*counter = *counter + 1
-					if *counter >= 4 {
-						Conn.Close()
-					}
+					//*counter = *counter + 1
+					//if *counter >= 4 {
+					//	Conn.Close()
+					//}
 				}
 			}
 		}
@@ -105,7 +123,6 @@ func dealTextMsg(Conn *websocket.Conn, msg []byte, counter *int) { //处理消�
 		IM.Logout(l_ac, l_p)
 	}
 }
-
 func dealBinMsg(Conn *websocket.Conn, arg []byte, content []byte) {
 	Type := gjson.GetBytes(arg, "Type").String()
 	switch Type {
@@ -115,21 +132,44 @@ func dealBinMsg(Conn *websocket.Conn, arg []byte, content []byte) {
 		case "New":
 			err := IM.StartFileSave(gjson.GetBytes(arg, "FN").String(), gjson.GetBytes(arg, "CompSegIndex").String(), gjson.GetBytes(arg, "MD5").String())
 			if err != nil {
-				Conn.WriteMessage(1, IM.Msg_File_New_Err(err))
+				Conn.WriteMessage(1, []byte(IM.GenerateJson(map[string]string{
+					"Type":   "Signup",
+					"Phrase": "New",
+					"Status": "Error",
+					"Err":    err.Error(),
+				})))
 			} else {
-				Conn.WriteMessage(1, IM.Msg_File_New_Success())
+				Conn.WriteMessage(1, []byte(IM.GenerateJson(map[string]string{
+					"Type":   "Signup",
+					"Phrase": "New",
+					"Status": "Success",
+				})))
 			}
 		case "Continue":
 			l_bool, err := IM.ContinueFileSave(gjson.GetBytes(arg, "FN").String(), content)
 			if err != nil && !l_bool {
-				Conn.WriteMessage(1, IM.Msg_File_Continue_Err(err))
+				Conn.WriteMessage(1, []byte(IM.GenerateJson(map[string]string{
+					"Type":   "Signup",
+					"Phrase": "Continue",
+					"Status": "Error",
+					"Err":    err.Error(),
+				})))
 				IM.Warn("[File Continue] %s", err)
 				return
 			} else if err != nil && l_bool {
-				Conn.WriteMessage(1, IM.Msg_File_Continue_Err(err))
+				Conn.WriteMessage(1, []byte(IM.GenerateJson(map[string]string{
+					"Type":   "Signup",
+					"Phrase": "Continue",
+					"Status": "Error",
+					"Err":    err.Error(),
+				})))
 				return
 			} else if err == nil && l_bool {
-				Conn.WriteMessage(1, IM.Msg_File_Continue_Success())
+				Conn.WriteMessage(1, []byte(IM.GenerateJson(map[string]string{
+					"Type":   "Signup",
+					"Phrase": "Continue",
+					"Status": "Success",
+				})))
 				return
 			}
 		}

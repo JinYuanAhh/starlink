@@ -12,8 +12,7 @@
     "Type": "Signup",
     "Info": {
         "Account": "<Account>",
-        "Pwd": "<Password>",
-        "PhoneNumber": "<PhoneNumber>"
+        "Pwd": "<Password>"
     }
 }
 ```
