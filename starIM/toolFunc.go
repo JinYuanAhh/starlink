@@ -48,6 +48,22 @@ func T_RandString(n int) string { //随机生成字符串 skey用
 
 	return *(*string)(unsafe.Pointer(&b))
 }
+func T_GetUserSecretKey(account string) string {
+	var str string
+	sqlStr := "SELECT secretKey FROM users WHERE account=?"
+	err := db.QueryRow(sqlStr, account).Scan(&str)
+	if err != nil {
+		return ""
+	} else {
+		return str
+	}
+}
+func CheckUserSecretKey(account string, secretKey string) bool {
+	var str string
+	sqlStr := "SELECT publicInfo FROM users WHERE account=? AND secretKey=?"
+	err := db.QueryRow(sqlStr, account, secretKey).Scan(&str)
+	return err == nil
+}
 
 func CheckTokenValid(token string) bool {
 	_, err := ParseToken(token)

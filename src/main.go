@@ -33,7 +33,6 @@ func wsHandler(w http.ResponseWriter, r *http.Request) { //websocket 处理器�
 		IM.Err("[ERR] Upgrader:", err)
 		return
 	}
-
 	var SigninWrongCount int                       //SigninWrong Counter
 	connectMsg := []byte(`{"Type": "ConnectMsg"}`) //连接成功时发送的消息
 	conn.WriteMessage(1, connectMsg)               //发送
@@ -67,7 +66,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) { //websocket 处理器�
 				continue
 			}
 			token, err := IM.ParseToken(gjson.GetBytes(arg, "T").String()) //验证身份
-			if err != nil || token.Ac == "" || token.P == "" {
+			if err != nil || token.Ac == "" || token.SecretKey == "" {
 				continue
 			}
 			go dealBinMsg(conn, arg, content) //处理

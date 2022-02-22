@@ -3,7 +3,6 @@ package main
 // 处理用户发送的消息
 
 import (
-	"encoding/json"
 	"github.com/gorilla/websocket"
 	IM "github.com/starIM"
 	"github.com/tidwall/gjson"
@@ -20,35 +19,32 @@ func dealTextMsg(Conn *websocket.Conn, msg []byte, counter *int) { //处理消�
 			return
 		}
 		l_ac := l_ACI.Ac
-		l_p := l_ACI.P
 		if err != nil {
 			IM.Warn("[SendMsg] %s", err)
 		}
-		ValidUserLogged := l_ac != "" && l_p != ""
+		ValidUserLogged := l_ac != "" && IM.CheckUserSecretKey(l_ac, l_ACI.SecretKey)
 		if ValidUserLogged {
-			l_msgContent := gjson.Get(sJson, "Info.Content").String() //获取信息内容
-			msgToSend := IM.GenerateJson(map[string]string{
-				"Type":         "Message",
-				"Info.Type":    "Text",
-				"Info.Content": l_msgContent,
-			})
+			l_msgContent := gjson.Get(sJson, "Info.Content").String()  //获取信息内容
 			l_msgContentType := gjson.Get(sJson, "Info.Type").String() //获取内容类型
 			switch l_msgContentType {                                  //依据消息的公私分情况
 			case "Public": //公共消息（所有人）
-				IM.SendStr_Public([]byte(msgToSend))
+				IM.AddPublicMsg(l_ACI.Ac, l_msgContent)
+				lPublicInfo := IM.Query_userPublicInfo(l_ac)
+				IM.SendToPublic(1, []byte(IM.GenerateJson(map[string]string{
+					"Type":               "Message",
+					"Info.Type":          "Public",
+					"Info.Content":       l_msgContent,
+					"Info.ContentType":   "Text",
+					"Info.From.Account":  l_ac,
+					"Info.From.Avatar":   gjson.Get(lPublicInfo, "Avatar").String(),
+					"Info.From.Nickname": gjson.Get(lPublicInfo, "Nickname").String(),
+				})))
 			case "Private": //私聊
-				account := gjson.Get(sJson, "Info.To").String()
-				IM.SendStr_Private([]byte(msgToSend), account)
+
 			case "Group": //群发
-				var accounts []string
-				err = json.Unmarshal([]byte(gjson.Get(sJson, "Info.To").String()), &accounts) //获取发送给的账号
-				if err != nil {
-					//IM.Normal("[Get] get ids when GroupMsg failed") //发送失败
-				} else {
-					//IM.SendStr_Group([]byte(msgToSend), accounts) //发送
-				}
+
 			default:
-				IM.Normal("UnFinished Func")
+				IM.Warn("UnFinished Func")
 			}
 		} else { //发出警告
 			//IM.Warn("[CheckLogged]")
@@ -74,39 +70,30 @@ func dealTextMsg(Conn *websocket.Conn, msg []byte, counter *int) { //处理消�
 	case "Signin": //登录
 		l_Account := gjson.Get(sJson, "Info.Account").String()
 		l_Pwd := gjson.Get(sJson, "Info.Pwd").String()
-		l_Platform := gjson.Get(sJson, "Info.P").String()
-		if e, _ := IM.CheckUserPlatformExist(l_Account, l_Platform); e {
+		_, err := IM.Signin(l_Account, l_Pwd) //登陆
+		if err == nil {                       //成功
+			T, err := IM.GenerateToken(l_Account, IM.T_GetUserSecretKey(l_Account))
+			if err != nil {
+				IM.Warn("[Signin - GenerateToken] %s", err)
+			} else {
+				Conn.WriteMessage(1, []byte(IM.GenerateJson(map[string]string{
+					"Type":   "Signin",
+					"Status": "Success",
+					"T":      T,
+				})))
+				IM.JoinUserConn(l_Account, Conn, T)
+			}
+		} else { // 失败
 			Conn.WriteMessage(1, []byte(IM.GenerateJson(map[string]string{
 				"Type":   "Signin",
 				"Status": "Error",
-				"Err":    "account has been logged",
+				"Err":    err.Error(),
 			})))
-		} else {
-			_, err := IM.Signin(l_Account, l_Pwd) //登陆
-			if err == nil {                       //成功
-				T, err := IM.GenerateToken(l_Account, l_Platform)
-				if err != nil {
-					IM.Warn("[Signin] %s", err)
-				} else {
-					Conn.WriteMessage(1, []byte(IM.GenerateJson(map[string]string{
-						"Type":   "Signin",
-						"Status": "Success",
-						"T":      T,
-					})))
-					IM.JoinUserPlatform(l_Account, Conn, l_Platform)
-				}
-			} else { // 失败
-				Conn.WriteMessage(1, []byte(IM.GenerateJson(map[string]string{
-					"Type":   "Signin",
-					"Status": "Error",
-					"Err":    err.Error(),
-				})))
-				if err.Error() == "password is wrong" {
-					//*counter = *counter + 1
-					//if *counter >= 4 {
-					//	Conn.Close()
-					//}
-				}
+			if err.Error() == "password is wrong" {
+				//*counter = *counter + 1
+				//if *counter >= 4 {
+				//	Conn.Close()
+				//}
 			}
 		}
 	case "Logout":
@@ -116,11 +103,30 @@ func dealTextMsg(Conn *websocket.Conn, msg []byte, counter *int) { //处理消�
 			return
 		}
 		l_ac := l_ACI.Ac
-		l_p := l_ACI.P
-		if l_ac == "" || l_p == "" {
+		l_sk := l_ACI.SecretKey
+		if l_ac == "" || l_sk == "" {
 			return
 		}
-		IM.Logout(l_ac, l_p)
+		IM.Logout(l_ac, l_sk)
+	case "Reconnect":
+		l_ACI, err := IM.ParseToken(gjson.Get(sJson, "T").String())
+		if err != nil {
+			return
+		}
+		for _, v := range IM.Users[l_ACI.Ac] {
+			if v.T == gjson.Get(sJson, "T").String() {
+				v.Conn = Conn
+				Conn.WriteMessage(1, []byte(IM.GenerateJson(map[string]string{
+					"Type":   "Reconnect",
+					"Status": "Success",
+				})))
+				return
+			}
+		}
+		Conn.WriteMessage(1, []byte(IM.GenerateJson(map[string]string{
+			"Type":   "Reconnect",
+			"Status": "Error",
+		})))
 	}
 }
 func dealBinMsg(Conn *websocket.Conn, arg []byte, content []byte) {

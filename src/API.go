@@ -9,7 +9,7 @@ import (
 )
 
 func InitMux() {
-	R.HandleFunc("/ws/", wsHandler)
+	R.HandleFunc("/ws", wsHandler)
 	R.HandleFunc("/api/query/{statement}", apiHandler)
 }
 
@@ -17,6 +17,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	statement := vars["statement"]
 	body, _ := ioutil.ReadAll(r.Body)
+	Sbody := string(body)
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	//w.Header().Add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, UPDATE")
 	w.Header().Add("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization")
@@ -24,8 +25,10 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	//w.Header().Add("Access-Control-Allow-Credentials", "true")
 	switch statement {
 	case "userPublicInfo":
-		w.Write([]byte(IM.Query_userPublicInfo(gjson.Get(string(body), "account").String())))
+		w.Write([]byte(IM.Query_userPublicInfo(gjson.Get(Sbody, "account").String())))
 	case "userPrivateInfo":
-		w.Write([]byte(IM.Query_userPrivateInfo(gjson.Get(string(body), "T").String())))
+		w.Write([]byte(IM.Query_userPrivateInfo(gjson.Get(Sbody, "T").String())))
+	case "historyPublicMessages":
+		w.Write([]byte(IM.GetHistroyPublicMessages()))
 	}
 }

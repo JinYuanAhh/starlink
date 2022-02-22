@@ -6,7 +6,7 @@ import (
 )
 
 func Signup(account string, pwd string) (int, error) { //注册
-	sqlStr := "INSERT INTO users (id, account, pwd, phoneNum, secretKey, infos) VALUES (?,?,?,'',?,?)"
+	sqlStr := "INSERT INTO users (id, account, pwd, phoneNum, secretKey, publicInfo) VALUES (?,?,?,'',?,?)"
 	if !T_IsAccountExist(account) { //检测账号重复
 		{
 			v, err := ValidStrFormat(account, StringFormat_Username)
@@ -28,8 +28,10 @@ func Signup(account string, pwd string) (int, error) { //注册
 			return -1, err
 		}
 		_, err = db.Exec(sqlStr, id, account, pwd, T_RandString(188), GenerateJson(map[string]string{
-			"Avatar":         "https://pic2.zhimg.com/v2-5a2635a7bc78b92de9e3daacb38fe442_r.jpg",
-			"Friends.0.type": "@PUBLICROOM",
+			"Avatar":          "https://pic1.zhimg.com/80/v2-2f907e4cf5255cb8fa149899a3ba6d5a_720w.jpg?source=1940ef5c",
+			"Nickname":        account,
+			"Public.title":    "PublicRoom",
+			"Public.disabled": "0",
 		}))
 		if err != nil { //插入记录失败
 			return -1, err
@@ -68,7 +70,7 @@ func Signin(account string, pwd string) (string, error) { //登录
 }
 
 func Logout(account string, platform string) {
-	DelUserPlatform(account, platform)
+	DelUserConn(account, platform)
 	if len(Users[account]) == 0 {
 		SetUserOnline(account, 0)
 	}
