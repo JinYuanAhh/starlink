@@ -2,7 +2,7 @@
 
 ```json -- JSON
 {
-    "Type": "SendMsg",
+    "Type": "Message",
     "Info": {
         "Content": "<Message>",
         "To": "<SendTo>",

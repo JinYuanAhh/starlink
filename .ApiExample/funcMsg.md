@@ -1,10 +1,3 @@
->FirstConnectMessage
-
-```json -- JSON
-{
-    "Type": "ConnectMsg",
-}
-```
 >Signup
 
 ```json -- JSON
@@ -23,8 +16,7 @@
     "Type": "Signin",
     "Info": {
         "Account": "<Account>",
-        "Pwd": "<Password>",
-        "P": "Web/Mobile/PC/...."
+        "Pwd": "<Password>"
     }
 }
 ```
@@ -33,6 +25,29 @@
 ```json -- JSON
 {
     "Type": "Logout",
-    "T": "<token>"
+}
+```
+>NewFriendRequest
+
+```json -- JSON
+{
+    "Type": "FriendRequest",
+    "Info": {
+        "Type": "New",
+        "To": "",
+        "Addition": ""
+    }
+}
+```
+>TackleFriendRequest
+
+```json -- JSON
+{
+    "Type": "FriendRequest",
+    "Info": {
+        "Type": "New",
+        "To": "",
+        "Addition": ""
+    }
 }
 ```

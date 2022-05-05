@@ -10,7 +10,8 @@ import (
 
 func InitMux() {
 	R.HandleFunc("/ws", wsHandler)
-	R.HandleFunc("/api/query/{statement}", apiHandler)
+
+	R.HandleFunc("/api/query/{statement}", apiHandler).Methods("POST")
 }
 
 func apiHandler(w http.ResponseWriter, r *http.Request) {

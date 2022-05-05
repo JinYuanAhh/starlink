@@ -10,7 +10,7 @@ import (
 // 工具函数
 func T_getUserAmount() (int, error) { //获取用户数量
 	var amount int
-	sqlStr := "SELECT COUNT(id) AS amount FROM users"
+	sqlStr := "SELECT COUNT(id) AS amount FROM sl_users"
 	err := db.QueryRow(sqlStr).Scan(&amount)
 	if err == nil {
 		return amount, err
@@ -19,7 +19,7 @@ func T_getUserAmount() (int, error) { //获取用户数量
 	}
 }
 func T_IsAccountExist(account string) bool { //判断账户是否存在
-	sqlStr := "SELECT id FROM users WHERE account=?"
+	sqlStr := "SELECT account FROM sl_users WHERE account=?"
 	var id int
 	return !(db.QueryRow(sqlStr, account).Scan(&id) == sql.ErrNoRows)
 }
@@ -50,7 +50,7 @@ func T_RandString(n int) string { //随机生成字符串 skey用
 }
 func T_GetUserSecretKey(account string) string {
 	var str string
-	sqlStr := "SELECT secretKey FROM users WHERE account=?"
+	sqlStr := "SELECT secretKey FROM sl_users WHERE account=?"
 	err := db.QueryRow(sqlStr, account).Scan(&str)
 	if err != nil {
 		return ""
@@ -60,7 +60,7 @@ func T_GetUserSecretKey(account string) string {
 }
 func CheckUserSecretKey(account string, secretKey string) bool {
 	var str string
-	sqlStr := "SELECT publicInfo FROM users WHERE account=? AND secretKey=?"
+	sqlStr := "SELECT account FROM sl_users WHERE account=? AND secretKey=?"
 	err := db.QueryRow(sqlStr, account, secretKey).Scan(&str)
 	return err == nil
 }
@@ -75,7 +75,7 @@ func CheckTokenValid(token string) bool {
 }
 func Query_userPublicInfo(account string) string {
 	var str string
-	sqlStr := "SELECT publicInfo FROM users WHERE account=?"
+	sqlStr := "SELECT publicInfo FROM sl_users WHERE account=?"
 	err := db.QueryRow(sqlStr, account).Scan(&str)
 	if err != nil {
 		return "{}"
@@ -88,11 +88,25 @@ func Query_userPrivateInfo(token string) string {
 	if err != nil {
 		return ""
 	} else {
-		sqlStr := "SELECT privateInfo FROM users WHERE account=?"
+		sqlStr := "SELECT privateInfo FROM sl_users WHERE account=?"
 		err = db.QueryRow(sqlStr, l_ACI.Ac).Scan(&str)
 		if err != nil {
 			return "{}"
 		}
 		return str
 	}
+}
+func UserPrivateInfo(ac string) string {
+	var str string
+	sqlStr := "SELECT privateInfo FROM sl_users WHERE account=?"
+	err := db.QueryRow(sqlStr, ac).Scan(&str)
+	if err != nil {
+		return "{}"
+	}
+	return str
+}
+func SetUserPrivateInfo(ac string, content string) error {
+	sqlStr := "UPDATE sl_users SET privateInfo=? WHERE account=?"
+	_, err := db.Exec(sqlStr, content, ac)
+	return err
 }

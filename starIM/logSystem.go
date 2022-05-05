@@ -1,26 +1,18 @@
 package starIM
 
 import (
-	"fmt"
 	"github.com/fatih/color"
+	"log"
+	"os"
 	"strings"
-	"time"
 )
 
 var (
-	PrefixMode = "default"
+	dbg = log.New(os.Stdout, "<DEBUG> ", log.Lshortfile|log.Ltime|log.Ldate)
 )
 
-func SetPrefixMode(mode string) { //设置前缀 （时间等）
-	PrefixMode = mode
-}
-func TacklePrefix() string {
-	if PrefixMode == "" {
-		return ""
-	} else if PrefixMode == "time" {
-		return time.Now().Format("[2006-01-02 15:04:05]")
-	}
-	return ""
+func SetFlags(flag int) {
+	log.SetFlags(flag)
 }
 
 func StrConnect(s ...string) string {
@@ -33,37 +25,37 @@ func StrConnect(s ...string) string {
 
 func Err(msg string, f ...interface{}) {
 
-	fmt.Printf(StrConnect(TacklePrefix(), color.HiRedString(msg), "\n"), f...)
+	log.Printf(StrConnect(color.HiRedString(msg), "\n"), f...)
 }
 
 func Warn(msg string, f ...interface{}) {
-	fmt.Printf(StrConnect(TacklePrefix(), color.HiYellowString(msg), "\n"), f...)
+	log.Printf(StrConnect(color.HiYellowString(msg), "\n"), f...)
 }
 
 func Succ(msg string, f ...interface{}) {
-	fmt.Printf(StrConnect(TacklePrefix(), color.HiGreenString(msg), "\n"), f...)
+	log.Printf(StrConnect(color.HiGreenString(msg), "\n"), f...)
 }
 
 func Normal(msg string, f ...interface{}) {
-	fmt.Printf(StrConnect(TacklePrefix(), color.WhiteString(msg), "\n"), f...)
+	log.Printf(StrConnect(color.WhiteString(msg), "\n"), f...)
 }
 
 func ErrF(msg string, f ...interface{}) {
-	fmt.Printf(StrConnect(TacklePrefix(), color.HiRedString(msg)), f...)
+	log.Printf(StrConnect(color.HiRedString(msg)), f...)
 }
 
 func WarnF(msg string, f ...interface{}) {
-	fmt.Printf(StrConnect(TacklePrefix(), color.HiYellowString(msg)), f...)
+	log.Printf(StrConnect(color.HiYellowString(msg)), f...)
 }
 
 func SuccF(msg string, f ...interface{}) {
-	fmt.Printf(StrConnect(TacklePrefix(), color.HiGreenString(msg)), f...)
+	log.Printf(StrConnect(color.HiGreenString(msg)), f...)
 }
 
 func NormalF(msg string, f ...interface{}) {
-	fmt.Printf(StrConnect(TacklePrefix(), color.WhiteString(msg)), f...)
+	log.Printf(StrConnect(color.WhiteString(msg)), f...)
 }
 
 func Debug(msg string, f ...interface{}) {
-	fmt.Printf(StrConnect(color.BlueString(msg), "\n"), f...)
+	dbg.Printf(StrConnect(color.BlueString(msg), "\n"), f...)
 }

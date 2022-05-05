@@ -3,23 +3,18 @@ package starIM
 import (
 	"database/sql"
 	"errors"
+	"regexp"
 )
 
 func Signup(account string, pwd string) (int, error) { //注册
-	sqlStr := "INSERT INTO users (id, account, pwd, phoneNum, secretKey, publicInfo) VALUES (?,?,?,'',?,?)"
+	sqlStr := "INSERT INTO sl_users (id, account, pwd, phoneNum, secretKey, publicInfo) VALUES (?,?,?,'',?,?)"
 	if !T_IsAccountExist(account) { //检测账号重复
 		{
-			v, err := ValidStrFormat(account, StringFormat_Username)
+			v, err := regexp.MatchString(Format_Username, account)
 			if err != nil {
 				return -1, err
 			} else if v {
 				return -1, errors.New("account contains illegal character")
-			}
-			v, err = ValidStrFormat(pwd, StringFormat_Pwd)
-			if err != nil {
-				return -1, err
-			} else if v {
-				return -1, errors.New("pwd contains illegal character")
 			}
 		} //验证账号或密码是否含有特殊字符
 		id, err := T_getUserAmount()
@@ -28,10 +23,10 @@ func Signup(account string, pwd string) (int, error) { //注册
 			return -1, err
 		}
 		_, err = db.Exec(sqlStr, id, account, pwd, T_RandString(188), GenerateJson(map[string]string{
-			"Avatar":          "https://pic1.zhimg.com/80/v2-2f907e4cf5255cb8fa149899a3ba6d5a_720w.jpg?source=1940ef5c",
-			"Nickname":        account,
-			"Public.title":    "PublicRoom",
-			"Public.disabled": "0",
+			"Avatar":         "",
+			"Nickname":       account,
+			"Public.title":   "PublicRoom",
+			"Public.TipType": "0",
 		}))
 		if err != nil { //插入记录失败
 			return -1, err
@@ -43,7 +38,7 @@ func Signup(account string, pwd string) (int, error) { //注册
 }
 
 func Signin(account string, pwd string) (string, error) { //登录
-	sqlStr := "SELECT secretKey, pwd FROM users WHERE account = ?"
+	sqlStr := "SELECT secretKey, pwd FROM sl_users WHERE account = ?"
 	var ( //查询secretKey和pwd 定义变量
 		secretKey string
 		password  string
@@ -66,12 +61,5 @@ func Signin(account string, pwd string) (string, error) { //登录
 		} else { //失败
 			return "", errors.New("password is wrong")
 		}
-	}
-}
-
-func Logout(account string, platform string) {
-	DelUserConn(account, platform)
-	if len(Users[account]) == 0 {
-		SetUserOnline(account, 0)
 	}
 }
