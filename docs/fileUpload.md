@@ -49,6 +49,12 @@
 }
 ```
 
+### Error - 错误
+
+> #### exist
+
+为Sha **< Sha >** 的文件已存在
+
 ## Append - 传输未完成上传的文件内容
 
 ### Info  
@@ -64,6 +70,16 @@
 
 文件真正要追加的内容，无需编码
 
+### Error - 错误
+
+> #### not your file or no such file
+
+没有**你上传的**Sha256为 **< Sha >** 的文件
+
+> #### completed
+
+此文件已经完成上传
+
 ## Complete - 完成文件上传
 
 ### Info  
@@ -74,3 +90,17 @@
     "Sha":"文件最终内容的Sha256"
 }
 ```
+
+### Error - 错误
+
+> #### not your file or no such file
+
+没有**你上传的**Sha256为 **< Sha >** 的文件
+
+> #### completed
+
+此文件已经完成上传
+
+> #### sha256 not match
+
+此文件现有内容的Sha256与[New](/fileUpload#new-新建文件上传请求)时刻传入的Sha256不匹配

@@ -91,6 +91,9 @@ func AppendFile(sha string, owner string, content []byte) error {
 	if err := CheckFileOwner(sha, owner); err != nil {
 		return err
 	}
+	if CheckFileCompleted(sha) {
+		return errors.New("completed")
+	}
 	f, err := os.OpenFile(StrConnect("./Resources/Files/", sha), os.O_APPEND, 0777)
 	defer f.Close()
 	if err != nil {

@@ -5,4 +5,4 @@
 ## 开发
 
 ### 文件上传
-[文档](fileUpload?id=文件上传)
+[文档](/fileUpload#文件上传)
