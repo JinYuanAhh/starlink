@@ -188,8 +188,8 @@ func dealBinMsg(Connection *IM.Connection, arg []byte, content []byte) {
 		itype := gjson.GetBytes(arg, "Info.Type").String()
 		switch itype { //Type
 		case "New":
-			rs := gjson.GetManyBytes(arg, "Info.Filename", "Info.Sha")
-			err := IM.CreateFile(rs[1].String(), rs[0].String(), Connection.Account)
+			rs := gjson.GetManyBytes(arg, "Info.Filename", "Info.Sha", "Info.Args", "Info.Size")
+			err := IM.CreateFile(rs[1].String(), rs[0].String(), Connection.Account, rs[2].String(), rs[3].String())
 			if err != nil {
 				go ConnWriteMessage(Connection.Conn, 1, IM.GenerateJson(map[string]string{
 					"Type":        "File",
@@ -199,7 +199,7 @@ func dealBinMsg(Connection *IM.Connection, arg []byte, content []byte) {
 				}))
 			}
 		case "Append":
-			if err := IM.AppendFile("Info.Sha", Connection.Account, content); err != nil {
+			if err := IM.AppendFile(gjson.GetBytes(arg, "Info.Sha").String(), Connection.Account, content); err != nil {
 				go ConnWriteMessage(Connection.Conn, 1, IM.GenerateJson(map[string]string{
 					"Type":        "File",
 					"Info.Type":   "Append",
@@ -213,8 +213,22 @@ func dealBinMsg(Connection *IM.Connection, arg []byte, content []byte) {
 					"Info.Result": "Success",
 				}))
 			}
+		case "Complete":
+			if err := IM.CompleteFile(gjson.GetBytes(arg, "Info.Sha").String(), Connection.Account); err != nil {
+				go ConnWriteMessage(Connection.Conn, 1, IM.GenerateJson(map[string]string{
+					"Type":        "File",
+					"Info.Type":   "Complete",
+					"Info.Result": "Error",
+					"Info.Error":  err.Error(),
+				}))
+			} else {
+				go ConnWriteMessage(Connection.Conn, 1, IM.GenerateJson(map[string]string{
+					"Type":        "File",
+					"Info.Type":   "Complete",
+					"Info.Result": "Success",
+				}))
+			}
 		}
-
 	}
 }
 

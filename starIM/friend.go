@@ -66,5 +66,5 @@ func DeleteFriendRequest(from string, to string) (bool, error) {
 			return true, nil
 		}
 	}
-	return false, errors.New("not exists")
+	return false, errors.New("not exist")
 }

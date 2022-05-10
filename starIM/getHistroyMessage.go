@@ -6,16 +6,20 @@ import (
 	"strconv"
 )
 
-func GetHistroyPublicMessages() string {
+func GetHistroyPublicMessages(ps int, pn int) string {
 	var account, content, l string
 	var i = 0
 	var msgs = "[]"
-	sqlStr := "SELECT fromaccount, content FROM sl_msgs_public WHERE canceled = 0"
+	sqlStr := "SELECT fromaccount, content FROM sl_msgs_public WHERE canceled = 0 ORDER BY time DESC"
 	rows, err := db.Query(sqlStr)
 	defer rows.Close()
 	if err != nil {
 		return ""
 	} else {
+		for ; i < (pn-1)*ps; i++ {
+			rows.Next()
+		}
+		i = 0
 		for rows.Next() {
 			err = rows.Scan(&account, &content)
 			if err != nil {
@@ -28,6 +32,9 @@ func GetHistroyPublicMessages() string {
 			l, _ = sjson.Set(l, StrConnect(strconv.Itoa(i), ".content"), content)
 			msgs = l
 			i++
+			if i == ps {
+				break
+			}
 		}
 		return msgs
 	}
