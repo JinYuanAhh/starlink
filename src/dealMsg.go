@@ -194,7 +194,7 @@ func dealBinMsg(Connection *IM.Connection, arg []byte, content []byte) {
 				go ConnWriteMessage(Connection.Conn, 1, IM.GenerateJson(map[string]string{
 					"Type":        "File",
 					"Info.Type":   "New",
-					"Info.Result": "Error",
+					"Info.Status": "Error",
 					"Info.Error":  err.Error(),
 				}))
 			}
@@ -203,14 +203,14 @@ func dealBinMsg(Connection *IM.Connection, arg []byte, content []byte) {
 				go ConnWriteMessage(Connection.Conn, 1, IM.GenerateJson(map[string]string{
 					"Type":        "File",
 					"Info.Type":   "Append",
-					"Info.Result": "Error",
+					"Info.Status": "Error",
 					"Info.Error":  err.Error(),
 				}))
 			} else {
 				go ConnWriteMessage(Connection.Conn, 1, IM.GenerateJson(map[string]string{
 					"Type":        "File",
 					"Info.Type":   "New",
-					"Info.Result": "Success",
+					"Info.Status": "Success",
 				}))
 			}
 		case "Complete":
@@ -218,14 +218,14 @@ func dealBinMsg(Connection *IM.Connection, arg []byte, content []byte) {
 				go ConnWriteMessage(Connection.Conn, 1, IM.GenerateJson(map[string]string{
 					"Type":        "File",
 					"Info.Type":   "Complete",
-					"Info.Result": "Error",
+					"Info.Status": "Error",
 					"Info.Error":  err.Error(),
 				}))
 			} else {
 				go ConnWriteMessage(Connection.Conn, 1, IM.GenerateJson(map[string]string{
 					"Type":        "File",
 					"Info.Type":   "Complete",
-					"Info.Result": "Success",
+					"Info.Status": "Success",
 				}))
 			}
 		}
