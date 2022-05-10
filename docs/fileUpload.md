@@ -66,7 +66,7 @@
 
 ```json
 {
-    "Type":"New",
+    "Type":"Append",
     "Sha":"文件最终内容的Sha256"
 }
 ```
@@ -91,7 +91,7 @@
 
 ```json
 {
-    "Type":"New",
+    "Type":"Complete",
     "Sha":"文件最终内容的Sha256"
 }
 ```
