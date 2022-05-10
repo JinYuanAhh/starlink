@@ -109,6 +109,22 @@ func AppendFile(sha string, owner string, content []byte) error {
 		}
 	}
 }
+func AppendFileWithoutAuth(sha string, content []byte) error {
+	f, err := os.OpenFile(StrConnect("./Resources/Files/", sha), os.O_APPEND, 0777)
+	defer f.Close()
+	if err != nil {
+		return err
+	} else {
+		_, err = f.Write(content)
+		if err != nil {
+			return err
+		} else {
+			sqlStr := "UPDATE sl_files SET segIndex=segIndex+1 WHERE sha=?"
+			_, err = db.Exec(sqlStr, sha)
+			return err
+		}
+	}
+}
 
 func CompleteFile(sha string, owner string) error {
 	if CheckFileCompleted(sha) {

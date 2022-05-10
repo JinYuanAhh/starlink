@@ -198,7 +198,7 @@ func dealBinMsg(Connection *IM.Connection, arg []byte, content []byte) {
 					"Info.Error":  err.Error(),
 				}))
 			} else if len(content) != 0 {
-				err = IM.AppendFile(gjson.GetBytes(arg, "Info.Sha").String(), Connection.Account, content)
+				err = IM.AppendFileWithoutAuth(gjson.GetBytes(arg, "Info.Sha").String(), content)
 				if err != nil {
 					go ConnWriteMessage(Connection.Conn, 1, IM.GenerateJson(map[string]string{
 						"Type":        "File",
