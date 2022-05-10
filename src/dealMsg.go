@@ -197,6 +197,28 @@ func dealBinMsg(Connection *IM.Connection, arg []byte, content []byte) {
 					"Info.Status": "Error",
 					"Info.Error":  err.Error(),
 				}))
+			} else if len(content) != 0 {
+				err = IM.AppendFile(gjson.GetBytes(arg, "Info.Sha").String(), Connection.Account, content)
+				if err != nil {
+					go ConnWriteMessage(Connection.Conn, 1, IM.GenerateJson(map[string]string{
+						"Type":        "File",
+						"Info.Type":   "New",
+						"Info.Status": "Error",
+						"Info.Error":  IM.StrConnect("APPEND-", err.Error()),
+					}))
+				} else {
+					go ConnWriteMessage(Connection.Conn, 1, IM.GenerateJson(map[string]string{
+						"Type":        "File",
+						"Info.Type":   "New",
+						"Info.Status": "Success",
+					}))
+				}
+			} else {
+				go ConnWriteMessage(Connection.Conn, 1, IM.GenerateJson(map[string]string{
+					"Type":        "File",
+					"Info.Type":   "New",
+					"Info.Status": "Success",
+				}))
 			}
 		case "Append":
 			if err := IM.AppendFile(gjson.GetBytes(arg, "Info.Sha").String(), Connection.Account, content); err != nil {
@@ -209,7 +231,7 @@ func dealBinMsg(Connection *IM.Connection, arg []byte, content []byte) {
 			} else {
 				go ConnWriteMessage(Connection.Conn, 1, IM.GenerateJson(map[string]string{
 					"Type":        "File",
-					"Info.Type":   "New",
+					"Info.Type":   "Append",
 					"Info.Status": "Success",
 				}))
 			}

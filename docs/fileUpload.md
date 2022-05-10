@@ -49,6 +49,11 @@
 }
 ```
 
+### Content
+?> **可选**  
+
+如果不为空，则会自动追加一次[Append](/fileUpload#append-传输未完成上传的文件内容)操作，若发生错误，则错误会以```APPPEND-```开头，之后错误内容同[Append错误](/fileUpload#error-错误-1)
+
 ### Error - 错误
 
 > #### exist
