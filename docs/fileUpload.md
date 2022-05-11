@@ -2,7 +2,7 @@
 
 ## 格式
 
-> **{ Args }|{ Content }**  
+> **Args|Content**  
 > **"|"** 不可省略，无论Content是否为空
 
 ### Args
