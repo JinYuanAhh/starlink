@@ -44,11 +44,13 @@ func wsHandler(w http.ResponseWriter, r *http.Request) { //websocket 处理器�
 	go dealChanMsg(Connection)
 	for { //死循环读消息
 		msgType, msg, err := conn.ReadMessage() //没有新消息时会阻塞
-		if err != nil {                         //发生错误则关闭连接
+		IM.DEBUGCOUNTER++
+		IM.Debug("%d", IM.DEBUGCOUNTER)
+		if err != nil { //发生错误则关闭连接
 			conn.Close()
 			return
 		}
-		IM.Debug("%s", msg)                                            //DEBUG:: 显示收到的消息
+		//IM.Debug("%s", msg)                                            //DEBUG:: 显示收到的消息
 		if msgType == websocket.TextMessage && gjson.ValidBytes(msg) { //如果是文本消息 大部分 //验证是否为有效的json
 			go dealTextMsg(Connection, msg, &SigninWrongCount) //处理
 		} else if msgType == websocket.BinaryMessage && bytes.Contains(msg, []byte{'|'}) { //如果是二进制消息 关于文件的
@@ -79,6 +81,6 @@ func main() {
 }
 
 func init() { //设置logsystem的消息前自动加上时间
-	os.MkdirAll(IM.StrConnect(filepath.Dir(os.Args[0]), "/Resources/Files"), os.ModePerm)     //创建必要目录 - 文件
-	os.MkdirAll(IM.StrConnect(filepath.Dir(os.Args[0]), "/Resources/FilesInfo"), os.ModePerm) //创建必要目录 - 未完成上传文件信息
+	os.MkdirAll(IM.StrConnect(filepath.Dir(os.Args[0]), "/Resources/Files"), os.ModePerm) //创建必要目录 - 文件
+	//os.MkdirAll(IM.StrConnect(filepath.Dir(os.Args[0]), "/Resources/FilesInfo"), os.ModePerm) //创建必要目录 - 未完成上传文件信息
 }

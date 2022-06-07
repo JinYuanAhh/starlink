@@ -1,7 +1,8 @@
 package starIM
 
-func init() {
+var DEBUGCOUNTER int = 0
 
+func init() {
 }
 
 func DEBUGMESSAGETIP(addition string) {

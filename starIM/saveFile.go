@@ -14,12 +14,12 @@ import (
 
 type SFile struct {
 	Filename string
-	Complete bool
+	Complete []uint8
 	SegIndex int
 	Owner    string
 	Date     time.Time
 	Args     string
-	Size     string
+	Size     float32
 }
 
 func GetFileSha256(fn string) (string, error) {
@@ -60,14 +60,16 @@ func CreateFile(sha string, fn string, owner string, args string, fullsize strin
 }
 
 func QueryFile(sha string) (SFile, error) {
-	sqlStr := "SELECT (filename, complete, segIndex, owner, date, args, size) FROM sl_files WHERE sha=?"
+	sqlStr := "SELECT filename, complete, segIndex, owner, date, fullsize, args FROM sl_files WHERE sha=?"
 	s := SFile{}
-	err := db.QueryRow(sqlStr, sha).Scan(&s.Filename, &s.Complete, &s.SegIndex, &s.Owner, &s.Date, &s.Args, &s.Size)
+	err := db.QueryRow(sqlStr, sha).Scan(&s.Filename, &s.Complete, &s.SegIndex, &s.Owner, &s.Date, &s.Size, &s.Args)
 	return s, err
 }
 func CheckFileOwner(sha string, owner string) error {
 	sqlStr := "SELECT owner FROM sl_files WHERE sha=? AND owner=?"
 	row := db.QueryRow(sqlStr, sha, owner)
+	var s_owner string
+	defer row.Scan(&s_owner)
 	if row.Err() == sql.ErrNoRows {
 		return errors.New("not your file or no such file")
 	}
@@ -83,7 +85,8 @@ func CheckFileCompleted(sha string) bool {
 
 func CheckFileInfoExist(sha string) bool {
 	sqlStr := "SELECT filename FROM sl_files WHERE sha=?"
-	err := db.QueryRow(sqlStr, sha).Scan()
+	var s_fn string
+	err := db.QueryRow(sqlStr, sha).Scan(&s_fn)
 	return err == sql.ErrNoRows
 }
 
@@ -100,6 +103,7 @@ func AppendFile(sha string, owner string, content []byte) error {
 		return err
 	} else {
 		_, err = f.Write(content)
+
 		if err != nil {
 			return err
 		} else {

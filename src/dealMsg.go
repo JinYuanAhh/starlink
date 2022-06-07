@@ -335,6 +335,7 @@ func dealChanMsg(Connection *IM.Connection) { //处理 MessageQuene 的 Msg
 
 func ConnWriteMessage(conn *websocket.Conn, mtype int, data []byte) {
 	L.Lock()
+	//IM.Debug("%s", data)
 	conn.WriteMessage(mtype, data)
 	L.Unlock()
 }

@@ -8,6 +8,7 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/starIM v0.0.0-00010101000000-000000000000
 	github.com/tidwall/gjson v1.14.0
+	github.com/tidwall/sjson v1.2.4
 )
 
 require (
@@ -17,8 +18,8 @@ require (
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
-	github.com/tidwall/sjson v1.2.4 // indirect
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
+	golang.org/x/text v0.3.7 // indirect
 )
 
 replace github.com/starIM => ../starIM
