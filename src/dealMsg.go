@@ -45,15 +45,15 @@ func dealTextMsg(Connection *IM.Connection, msg []byte, counter *int) { //处理
 		if err != nil {
 			//IM.Warn("[Signup] %s", err) //警告
 			go ConnWriteMessage(Connection.Conn, 1, []byte(IM.GenerateJson(map[string]string{
-				"Type":        "Signup",
-				"Info.Status": "Error",
-				"Error":       err.Error(),
+				"Type":   "Signup",
+				"Status": "Error",
+				"Error":  err.Error(),
 			})))
 		} else {
 			//IM.Normal("[Signup] New Acoount At: account: %s, pwd: %s, phoneNumber: %s", account, pwd, phoneNumber) //输出日志
 			go ConnWriteMessage(Connection.Conn, 1, []byte(IM.GenerateJson(map[string]string{
-				"Type":        "Signup",
-				"Info.Status": "Success",
+				"Type":   "Signup",
+				"Status": "Success",
 			})))
 		}
 	case "Signin": //登录
@@ -67,18 +67,18 @@ func dealTextMsg(Connection *IM.Connection, msg []byte, counter *int) { //处理
 				IM.Warn("[Signin - GenerateToken] %s", err)
 			} else {
 				go ConnWriteMessage(Connection.Conn, 1, []byte(IM.GenerateJson(map[string]string{
-					"Type":        "Signin",
-					"Info.Status": "Success",
-					"T":           T,
+					"Type":   "Signin",
+					"Status": "Success",
+					"T":      T,
 				})))
 				Connection.T = T
 				Connection.Account = l_Account
 			}
 		} else { // 失败
 			go ConnWriteMessage(Connection.Conn, 1, []byte(IM.GenerateJson(map[string]string{
-				"Type":        "Signin",
-				"Info.Status": "Error",
-				"Error":       err.Error(),
+				"Type":   "Signin",
+				"Status": "Error",
+				"Error":  err.Error(),
 			})))
 			if err.Error() == "password is wrong" {
 				//*counter = *counter + 1
@@ -96,15 +96,15 @@ func dealTextMsg(Connection *IM.Connection, msg []byte, counter *int) { //处理
 		l, err := IM.ParseToken(l_T)
 		if err != nil {
 			go ConnWriteMessage(Connection.Conn, 1, []byte(IM.GenerateJson(map[string]string{
-				"Type":        "Reconnect",
-				"Info.Status": "Error",
+				"Type":   "Reconnect",
+				"Status": "Error",
 			})))
 		}
 		Connection.T = l_T
 		Connection.Account = l.Ac
 		go ConnWriteMessage(Connection.Conn, 1, []byte(IM.GenerateJson(map[string]string{
-			"Type":        "Reconnect",
-			"Info.Status": "Success",
+			"Type":   "Reconnect",
+			"Status": "Success",
 		})))
 		return
 	case "FriendRequest":
@@ -121,6 +121,7 @@ func dealTextMsg(Connection *IM.Connection, msg []byte, counter *int) { //处理
 					go ConnWriteMessage(Connection.Conn, 1, []byte(IM.GenerateJson(map[string]string{
 						"Type":        "FriendRequest",
 						"Info.Status": "Error",
+						"Info.Type":   "New",
 						"Error":       err.Error(),
 					})))
 				}
