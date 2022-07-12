@@ -38,7 +38,6 @@ func wsHandler(w http.ResponseWriter, r *http.Request) { //websocket 处理器�
 		return
 	}
 	Connection.Conn = conn
-	var SigninWrongCount int //SigninWrong Counter
 	//IM.Normal("[Conn] A New Connection")
 	defer conn.Close()
 	go dealChanMsg(Connection)
@@ -52,7 +51,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) { //websocket 处理器�
 		}
 		//IM.Debug("%s", msg)                                            //DEBUG:: 显示收到的消息
 		if msgType == websocket.TextMessage && gjson.ValidBytes(msg) { //如果是文本消息 大部分 //验证是否为有效的json
-			go dealTextMsg(Connection, msg, &SigninWrongCount) //处理
+			go dealTextMsg(Connection, msg) //处理
 		} else if msgType == websocket.BinaryMessage && bytes.Contains(msg, []byte{'|'}) { //如果是二进制消息 关于文件的
 			b_args := bytes.SplitN(msg, []byte{'|'}, 2) //文件消息标准格式： base64|bin 所以先分割成为2份
 			//Msg 分割后成为 b_args
@@ -61,7 +60,9 @@ func wsHandler(w http.ResponseWriter, r *http.Request) { //websocket 处理器�
 				IM.Warn("[Base64 Decode - main.go]%s", err)
 				continue
 			}
-			go dealBinMsg(Connection, arg, b_args[1]) //处理
+			go dealFileMsg(Connection, arg, b_args[1]) //处理
+		} else if msgType == websocket.BinaryMessage {
+			go dealBinMsg(Connection, msg)
 		}
 	}
 }

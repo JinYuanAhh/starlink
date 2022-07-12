@@ -3,14 +3,16 @@ package main
 // 处理用户发送的消息
 
 import (
+	"fmt"
 	"github.com/gorilla/websocket"
 	IM "github.com/starIM"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
+	"io"
+	"os"
 )
 
-func dealTextMsg(Connection *IM.Connection, msg []byte, counter *int) { //处理消息
-	//Account := gjson.GetBytes(msg, "Userinfo.Account").String() //获取用户账号
+func dealTextMsg(Connection *IM.Connection, msg []byte) { //处理消息
 	l_msgType := gjson.GetBytes(msg, "Type").String() //获取信息类型
 	switch l_msgType {
 	case "Message":
@@ -22,16 +24,18 @@ func dealTextMsg(Connection *IM.Connection, msg []byte, counter *int) { //处理
 			case "Public": //公共消息（所有人）
 				go IM.AddPublicMsg(Connection.Account, l_msgContent)
 				IM.MessageQuene <- IM.GenerateJson(map[string]string{
-					"Type":              "Message",
-					"Info.Type":         "Public",
-					"Info.Content":      l_msgContent,
-					"Info.ContentType":  "Text",
-					"Info.From.Account": Connection.Account,
+					"Type":             "Message",
+					"Info.Type":        "Public",
+					"Info.Content":     l_msgContent,
+					"Info.ContentType": "Text",
+					"Info.From":        Connection.Account,
 				})
 			case "Private": //私聊
 
 			case "Group": //群发
 
+			case "File":
+				IM.MessageQuene <- msg
 			default:
 				IM.Err("UnFinished Func")
 			}
@@ -80,12 +84,6 @@ func dealTextMsg(Connection *IM.Connection, msg []byte, counter *int) { //处理
 				"Status": "Error",
 				"Error":  err.Error(),
 			})))
-			if err.Error() == "password is wrong" {
-				//*counter = *counter + 1
-				//if *counter >= 4 {
-				//	Connection.Conn.Close()
-				//}
-			}
 		}
 	case "Logout":
 		Connection.Account = ""
@@ -182,7 +180,8 @@ func dealTextMsg(Connection *IM.Connection, msg []byte, counter *int) { //处理
 		}
 	}
 }
-func dealBinMsg(Connection *IM.Connection, arg []byte, content []byte) {
+
+func dealFileMsg(Connection *IM.Connection, arg []byte, content []byte) {
 	Type := gjson.GetBytes(arg, "Type").String()
 	switch Type {
 	case "File":
@@ -255,6 +254,82 @@ func dealBinMsg(Connection *IM.Connection, arg []byte, content []byte) {
 	}
 }
 
+func dealBinMsg(Connection *IM.Connection, msg []byte) {
+	Type := gjson.GetBytes(msg, "Type").String()
+	switch Type {
+	case "Query":
+		statement := gjson.GetBytes(msg, "statement").String()
+		var Result []byte
+		Status := "Success"
+		switch statement {
+		case "userPublicInfo":
+			Result = []byte(IM.Query_userPublicInfo(gjson.GetBytes(msg, "Account").String()))
+		case "userPrivateInfo":
+			Result = []byte(IM.Query_userPrivateInfo(gjson.GetBytes(msg, "T").String()))
+		case "historyPublicMessages":
+			rs := gjson.GetManyBytes(msg, "PS", "PN") //PageSize PageNumber
+			Result = []byte(IM.GetHistroyPublicMessages(int(rs[0].Int()), int(rs[1].Int())))
+		case "fileInfo":
+			sha := gjson.GetBytes(msg, "Sha").String()
+			f, err := IM.QueryFile(sha)
+			if err != nil {
+				Status = "Error"
+				Result = []byte(err.Error())
+			} else {
+				C := "false"
+				if f.Complete[0] == '\u0001' {
+					C = "true"
+				}
+				Result = IM.GenerateJson(map[string]string{
+					"Filename": f.Filename,
+					"Owner":    f.Owner,
+					"Args":     f.Args,
+					"Date":     f.Date.String(),
+					"Complete": C,
+					"Size":     fmt.Sprintf("%f", f.Size),
+				})
+			}
+		case "file":
+			rs := gjson.GetManyBytes(msg, "Sha", "Buffsize", "SegIndex")
+			if rs[0].String() == "" || rs[1].String() == "" || rs[2].String() == "" {
+				Status = "Error"
+				Result = []byte("Argment Shortage")
+			} else {
+				f, err := os.OpenFile(IM.StrConnect("./Resources/Files/", rs[0].String()), os.O_RDONLY, 0777)
+				defer f.Close()
+				if err != nil {
+					Status = "Error"
+					Result = []byte(err.Error())
+				} else {
+					buf := make([]byte, rs[1].Int())
+					readSize, err := f.ReadAt(buf, rs[1].Int()*(rs[2].Int()-1))
+					if err != nil && err != io.EOF {
+						Status = "Error"
+						Result = []byte(err.Error()) //INFO:: Buffsize 单位是B
+					} else {
+						if int64(readSize) < rs[1].Int() {
+							Result = buf[:readSize]
+						}
+						Result = buf //INFO:: Buffsize 单位是B
+						//for {
+						//	readSize, err := f.Read(buf)
+						//	if err != nil && err != io.EOF {
+						//		w.WriteHeader(http.StatusInternalServerError)
+						//		return
+						//	} else if err == io.EOF {
+						//		return
+						//	}
+						//}
+					}
+					return
+				}
+			}
+		}
+		msg, _ := sjson.SetBytes(msg, "Status", Status)
+		go ConnWriteMessage(Connection.Conn, 2, append(append(msg, '|'), Result...))
+	}
+}
+
 func dealChanMsg(Connection *IM.Connection) { //处理 MessageQuene 的 Msg
 	var c []byte
 	IM.QueneCond.L.Lock()
@@ -323,6 +398,8 @@ func dealChanMsg(Connection *IM.Connection) { //处理 MessageQuene 的 Msg
 			}
 		case "Message":
 			if rs[1].String() == "Public" {
+				go ConnWriteMessage(Connection.Conn, 1, c)
+			} else if rs[1].String() == "File" {
 				go ConnWriteMessage(Connection.Conn, 1, c)
 			}
 		}
